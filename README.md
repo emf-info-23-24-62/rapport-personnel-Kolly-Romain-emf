@@ -1,520 +1,200 @@
-<h1>Module 323 - Programmer de manière fonctionnelle</h1>
+<h1>Module 323 — Programmer de manière fonctionnelle</h1>
 
-# 👍 RP / `Cheat-sheet` perso 🍒
+# RP / Cheat-sheet OPÉRATIONNELLE (SIMPLE, copier / adapter)
 
-# CheatList Module 323 — Version SIMPLE (copier / adapter)
-Objectif : tu regardes l’exercice → tu prends le **pattern** → tu changes juste les chemins (data.xxx).
+Objectif : tu lis l’énoncé → tu prends le **pattern** → tu changes juste les chemins (`jsonData.xxx`) et les clés.
+
+✅ Pas de `forEach`  
+✅ Pas de ternaire `?:`  
+✅ Helpers qui renvoient **un nouveau tableau trié**  
+✅ Exemples ultra répétables
 
 ---
 
-## 0) Le seul truc à retenir sur `reduce()`
+# 1) Reduce : la seule “mécanique” à savoir
 
-### Reduce = une boucle
+## Reduce = une boucle qui construit une sortie
 ```js
-tableau.reduce((acc, item) => {
+const res = tableau.reduce((acc, item) => {
   // 1) tu modifies acc
   // 2) tu return acc
   return acc;
 }, INIT);
 ```
 
-✅ **INIT = la forme de ta sortie**
-- Sortie **nombre** → `INIT = 0`
-- Sortie **tableau** → `INIT = []`
-- Sortie **objet** → `INIT = {}`
-- Sortie **min/max** → `INIT = { min: ..., max: ... }`
+## INIT = la forme de ta sortie
+- **NOMBRE** (somme, compteur) → `0`
+- **TABLEAU** (liste) → `[]`
+- **OBJET** (groupBy, byId) → `{}`
+- **MIN/MAX** → `{ min: null, max: null }`
 
-⚠️ Si tu oublies `INIT`, `acc` devient le **premier élément** du tableau → résultats absurdes (ex: tu comptes “à partir de 4”).
+⚠️ **Bug classique**
+Si tu oublies `INIT`, `acc` = **premier élément** → résultat incohérent.
 
 ---
 
-## 1) Helpers indispensables (copie-colle tel quel)
-### 1.1 Dates FR `JJ.MM.AAAA`
+# 2) Helper Pack (copie-colle tel quel)
+
+## 2.1 Dates → nombre (ms)
+### Date FR `"JJ.MM.AAAA"` -> ms
 ```js
-function parseFrDate(str) {
-  // "05.01.2026" -> Date(2026, 0, 5)
+function frDateToTime(str) {
   const parts = str.split('.');
   const day = parseInt(parts[0], 10);
   const month = parseInt(parts[1], 10) - 1;
   const year = parseInt(parts[2], 10);
-  return new Date(year, month, day);
-}
-
-function formatFrDate(dateObj) {
-  const d = String(dateObj.getDate()).padStart(2, '0');
-  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const y = dateObj.getFullYear();
-  return d + '.' + m + '.' + y;
+  return new Date(year, month, day).getTime();
 }
 ```
 
-### 1.2 Dates ISO `YYYY-MM-DD`
-⚠️ **Ne fais pas** `new Date("2026-01-06")` (problèmes timezone parfois).
+### Date ISO `"YYYY-MM-DD"` -> ms
 ```js
-function parseIsoDate(str) {
-  // "2026-01-06" -> Date(2026-01-06 à minuit local)
-  return new Date(str + 'T00:00:00');
+function isoDateToTime(str) {
+  const parts = str.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  return new Date(year, month, day).getTime();
 }
 ```
 
-### 1.3 Comparateurs de tri (sort)
+---
+
+## 2.2 String helpers (format)
+### Nom en MAJUSCULES
 ```js
-function sortNumberAsc(a, b) {
-  return a - b;
+function upper(str) {
+  return String(str).toUpperCase();
 }
-function sortNumberDesc(a, b) {
-  return b - a;
+```
+
+### Prénom “Capitalized”
+```js
+function capitalize(str) {
+  const s = String(str).toLowerCase();
+  if (s.length === 0) return s;
+  return s[0].toUpperCase() + s.slice(1);
 }
-function sortAlphaFr(a, b) {
+```
+
+### Full name propre (NOM Prenom)
+```js
+function fullName(last, first) {
+  return upper(last) + " " + capitalize(first);
+}
+```
+
+---
+
+## 2.3 Comparateurs “prêts”
+### Alpha FR
+```js
+function cmpAlphaFr(a, b) {
   return a.localeCompare(b, "fr");
 }
+```
 
-function sortDateFrAsc(a, b) {
-  return parseFrDate(a) - parseFrDate(b);
+### Num ASC / DESC
+```js
+function cmpNumAsc(a, b) {
+  return a - b;
 }
-function sortDateIsoAsc(a, b) {
-  return parseIsoDate(a) - parseIsoDate(b);
-}
-```
-
----
-
-## 2) Patterns EXAM — copier / adapter
-
-## P01 — Somme (NOMBRE)
-**Sortie :** un nombre (ex: total km, total CA, total jours)
-```js
-const total = data.reduce((acc, x) => {
-  acc = acc + x;
-  return acc;
-}, 0);
-```
-
----
-
-## P02 — Compter avec condition (NOMBRE)
-**Sortie :** un nombre (ex: nb >= 10, nb incidents, nb locations)
-```js
-const count = data.reduce((acc, x) => {
-  if (x >= 10) {
-    acc = acc + 1;
-  }
-  return acc;
-}, 0);
-```
-
----
-
-## P03 — Somme avec condition (NOMBRE)
-**Ex :** somme km uniquement si type === "Moyenne"
-```js
-const totalKm = data.reduce((acc, item) => {
-  if (item.vehicule.vehicule_type === "Moyenne") {
-    acc = acc + item.location.location_km;
-  }
-  return acc;
-}, 0);
-```
-
----
-
-## P04 — Min/Max sur NOMBRE
-```js
-const res = data.reduce((acc, x) => {
-  if (x < acc.min) acc.min = x;
-  if (x > acc.max) acc.max = x;
-  return acc;
-}, { min: data[0], max: data[0] });
-```
-
----
-
-## P05 — Min/Max sur DATE FR (JJ.MM.AAAA)
-**Sortie finale attendue :** strings
-```js
-const first = parseFrDate(sales[0].date);
-
-const mm = sales.reduce((acc, vente) => {
-  const d = parseFrDate(vente.date);
-
-  if (d < acc.min) acc.min = d;
-  if (d > acc.max) acc.max = d;
-
-  return acc;
-}, { min: first, max: first });
-
-// sortie string
-const result = {
-  dateMin: formatFrDate(mm.min),
-  dateMax: formatFrDate(mm.max),
-};
-```
-
----
-
-## P06 — Filtrer DANS le reduce (dataset MIXED)
-Quand il y a plusieurs types (sale / location), tu fais un `if` au début.
-```js
-const res = records.reduce((acc, item) => {
-  if (item.kind !== "sale") {
-    return acc; // ignore
-  }
-
-  // ici c’est sûr que c’est une vente
-  acc = acc + 1;
-  return acc;
-}, 0);
-```
-
-Autre version “champ pas présent” :
-```js
-const res = records.reduce((acc, item) => {
-  if (!item.date) return acc; // ignore les locations
-  // ...
-  return acc;
-}, { Min: null, Max: null });
-```
-
----
-
-## P07 — Construire un TABLEAU (equivalent map) avec reduce
-```js
-const labels = data.reduce((acc, item) => {
-  acc.push(item.nom);
-  return acc;
-}, []);
-```
-
----
-
-## P08 — Uniques (liste sans doublons) en TABLEAU
-```js
-const types = data.reduce((acc, item) => {
-  if (!acc.includes(item.type)) {
-    acc.push(item.type);
-  }
-  return acc;
-}, []);
-
-// tri alpha
-types.sort(sortAlphaFr);
-```
-
----
-
-## P09 — GroupBy simple (OBJET contenant des tableaux)
-**Objectif :** `{ "Moyenne": ["Mazda ...", ...], "Grande": [...] }`
-```js
-const grouped = locations.reduce((acc, loc) => {
-  const type = loc.vehicule.vehicule_type;
-
-  // 1) si le tableau n'existe pas encore, le créer
-  if (!acc[type]) {
-    acc[type] = [];
-  }
-
-  // 2) construire le texte
-  const label =
-    loc.vehicule.vehicule_nom +
-    " [" + loc.vehicule.vehicule_id + "], à " +
-    loc.vehicule.vehicule_prix_par_jour + " Frs/jour et " +
-    loc.vehicule.vehicule_prix_par_km + " Frs/km";
-
-  // 3) éviter doublons
-  if (!acc[type].includes(label)) {
-    acc[type].push(label);
-  }
-
-  return acc;
-}, {});
-```
-
-### Trier chaque tableau du groupBy (SANS forEach)
-```js
-const groupedSorted = Object.keys(grouped).reduce((acc, key) => {
-  // copie puis tri (évite d’abîmer l’original)
-  const copy = grouped[key].slice();
-  copy.sort(sortAlphaFr);
-
-  acc[key] = copy;
-  return acc;
-}, {});
-```
-
----
-
-## P10 — Indexer par ID (OBJET), puis récupérer en TABLEAU
-✅ C’est ton “hack” qui simplifie plein d’exos.
-
-```js
-const byId = locations.reduce((acc, loc) => {
-  const id = loc.client.client_id;
-
-  if (!acc[id]) {
-    acc[id] = {
-      nom_prenom: loc.client.client_nom + " " + loc.client.client_prenom,
-      date_naissance: loc.client.client_date_naissance,
-    };
-  }
-
-  return acc;
-}, {});
-
-// objet -> tableau
-const arr = Object.values(byId);
-```
-```js
-function actionA6() {
-    const utilisationDesVehiculesTrie = jsonData.locations.reduce((accStatByCar, currentLocation) => {
-        const id = currentLocation.vehicule.vehicule_id 
-        const vehicule = currentLocation.vehicule
-        const location = currentLocation.location
-        if(!accStatByCar[id]){
-
-            accStatByCar[id] = {
-                vehicule_id: id,
-                vehicule_type: vehicule.vehicule_type,
-                vehicule_nom: vehicule.vehicule_nom,
-                vehicule_prix_par_jour: vehicule.vehicule_prix_par_jour,
-                vehicule_prix_par_km: vehicule.vehicule_prix_par_km,
-                ca:0,
-                locations: 0,
-                jours:0,
-                km: 0 
-            }
-        }
-
-        accStatByCar[id].ca += location.location_jours * vehicule.vehicule_prix_par_jour + location.location_km * vehicule.vehicule_prix_par_km
-        accStatByCar[id].locations +=1
-        accStatByCar[id].jours += location.location_jours
-        accStatByCar[id].km += location.location_km
-
-        return accStatByCar
-
-    }, {});
-
-    const tab = Object.values(utilisationDesVehiculesTrie)
-    const res= tab.sort((a,b) => {
-        return b.ca - a.ca
-    })
-
-    afficherObjet(res);
-}
-```
-```js
-function actionA9() {
-    const TOP = 5;
-
-    const clientsTries = jsonData.locations.reduce((accClient, currentLocation) => {
-        const vehicule = currentLocation.vehicule
-        const location = currentLocation.location
-        const client = currentLocation.client
-
-        const id = client.client_id
-
-        if (!accClient[id]){
-            accClient[id] = {
-                nom_prenom: client.client_nom + client.client_prenom,
-                date_naissance: client.client_date_naissance,
-                age_str:  client.client_age_str,
-                ca:0,
-                locations: 0,
-                jours:0,
-                km: 0 
-            }
-
-        }
-
-        accClient[id].locations +=1
-        accClient[id].jours += location.location_jours
-        accClient[id].km += location.location_km
-        accClient[id].ca += location.location_jours * vehicule.vehicule_prix_par_jour + location.location_km * vehicule.vehicule_prix_par_km
-
-        return accClient
-
-    },[]);
-    
-    const tab  = Object.values(clientsTries)
-    const res = tab.sort((a,b) => {
-        return b.ca - a.ca
-    })
-    afficherObjet(res);
-}
-```
-
-
-### Trier par date naissance (FR)
-```js
-arr.sort((a, b) => {
-  return parseFrDate(a.date_naissance) - parseFrDate(b.date_naissance);
-});
-```
-
-### Trier par nom_prenom (alpha)
-```js
-arr.sort((a, b) => {
-  return a.nom_prenom.localeCompare(b.nom_prenom, "fr");
-});
-```
-
-### Trier par 2 critères (nom puis prénom)
-```js
-arr.sort((a, b) => {
-  const cmpNom = a.nom.localeCompare(b.nom, "fr");
-  if (cmpNom !== 0) {
-    return cmpNom;
-  }
-  return a.prenom.localeCompare(b.prenom, "fr");
-});
-```
-
----
-
-## P11 — CA (somme de sous-tableau) : ventes -> produits
-**CA d’une vente = somme(prix des produits)**
-```js
-function caVente(vente) {
-  return vente.produits.reduce((sum, p) => {
-    sum = sum + p.prix;
-    return sum;
-  }, 0);
+function cmpNumDesc(a, b) {
+  return b - a;
 }
 ```
 
 ---
 
-## P12 — CA par DATE (OBJET)
+## 2.4 Helpers de tri “tu donnes un tableau → ça rend un nouveau tableau trié”
+
+### Trier des strings (A → Z)
 ```js
-const caByDate = sales.reduce((acc, vente) => {
-  const ca = caVente(vente);
-  const date = vente.date;
+function sortStringsFrAsc(arr) {
+  const copy = arr.slice();
+  copy.sort(cmpAlphaFr);
+  return copy;
+}
+```
 
-  if (!acc[date]) {
-    acc[date] = 0;
-  }
-  acc[date] = acc[date] + ca;
+### Trier objets par texte (A → Z)
+```js
+function sortObjectsByTextKeyAsc(arr, key) {
+  const copy = arr.slice();
+  copy.sort((a, b) => {
+    return String(a[key]).localeCompare(String(b[key]), "fr");
+  });
+  return copy;
+}
+```
 
-  return acc;
-}, {});
+### Trier objets par nombre (ASC)
+```js
+function sortObjectsByNumberKeyAsc(arr, key) {
+  const copy = arr.slice();
+  copy.sort((a, b) => {
+    return Number(a[key]) - Number(b[key]);
+  });
+  return copy;
+}
+```
+
+### Trier objets par nombre (DESC)
+```js
+function sortObjectsByNumberKeyDesc(arr, key) {
+  const copy = arr.slice();
+  copy.sort((a, b) => {
+    return Number(b[key]) - Number(a[key]);
+  });
+  return copy;
+}
+```
+
+### Trier objets par date FR (ASC)
+```js
+function sortObjectsByFrDateKeyAsc(arr, key) {
+  const copy = arr.slice();
+  copy.sort((a, b) => {
+    return frDateToTime(a[key]) - frDateToTime(b[key]);
+  });
+  return copy;
+}
+```
+
+### Trier objets par date ISO (ASC)
+```js
+function sortObjectsByIsoDateKeyAsc(arr, key) {
+  const copy = arr.slice();
+  copy.sort((a, b) => {
+    return isoDateToTime(a[key]) - isoDateToTime(b[key]);
+  });
+  return copy;
+}
+```
+
+### Trier sur 2 critères (date FR puis texte)
+```js
+function sortByFrDateThenText(arr, dateKey, textKey) {
+  const copy = arr.slice();
+
+  copy.sort((a, b) => {
+    const da = frDateToTime(a[dateKey]);
+    const db = frDateToTime(b[dateKey]);
+
+    if (da < db) return -1;
+    if (da > db) return 1;
+
+    return String(a[textKey]).localeCompare(String(b[textKey]), "fr");
+  });
+
+  return copy;
+}
 ```
 
 ---
 
-## P13 — CA par CLIENT (TABLEAU trié)
-Objectif :
-`[ {id, nom, prenom, ca}, ... ]` tri DESC ca
-
-```js
-const byClient = sales.reduce((acc, vente) => {
-  const id = vente.client.id;
-
-  if (!acc[id]) {
-    acc[id] = {
-      id: id,
-      nom: vente.client.nom,
-      prenom: vente.client.prenom,
-      ca: 0
-    };
-  }
-
-  acc[id].ca = acc[id].ca + caVente(vente);
-
-  return acc;
-}, {});
-
-const arr = Object.values(byClient);
-
-arr.sort((a, b) => {
-  return b.ca - a.ca;
-});
-```
-
----
-
-## P14 — Incidents (TABLEAU) triés par date ISO
-Objectif format :
-```js
-[
-  { date:"2026-01-07", vehicule:"...", client:"...", details:"..." }
-]
-```
-
-```js
-const incidents = locations.reduce((acc, loc) => {
-  if (loc.location.has_incident === true) {
-    acc.push({
-      date: loc.location.location_date,
-      vehicule: loc.vehicule.vehicule_nom + " [" + loc.vehicule.vehicule_id + "]",
-      client: loc.client.client_nom + " " + loc.client.client_prenom,
-      details: loc.location.incident_details,
-    });
-  }
-  return acc;
-}, []);
-
-incidents.sort((a, b) => {
-  return parseIsoDate(a.date) - parseIsoDate(b.date);
-});
-```
-
----
-
-## P15 — TOP N (ex: top 3 produits par CA)
-### Étapes (toujours les mêmes)
-1) indexer par id dans un objet  
-2) `Object.values()`  
-3) `sort`  
-4) `slice(0, N)`
-
-```js
-// 1) récupérer tous les produits de toutes les ventes
-const allProducts = sales.reduce((acc, vente) => {
-  // on ajoute tous les produits de cette vente
-  vente.produits.forEach(p => acc.push(p)); // ⚠️ pas autorisé si forEach interdit
-  return acc;
-}, []);
-```
-
-⚠️ Si forEach interdit → fais-le en `reduce` aussi :
-```js
-const allProducts = sales.reduce((acc, vente) => {
-  const produits = vente.produits;
-
-  produits.reduce((acc2, p) => {
-    acc2.push(p);
-    return acc2;
-  }, acc);
-
-  return acc;
-}, []);
-```
-
-Puis index + top :
-```js
-const byProd = allProducts.reduce((acc, p) => {
-  const id = p.id;
-
-  if (!acc[id]) {
-    acc[id] = { id: p.id, nom: p.nom, ca: 0 };
-  }
-  acc[id].ca = acc[id].ca + p.prix;
-
-  return acc;
-}, {});
-
-const arr = Object.values(byProd);
-
-arr.sort((a, b) => {
-  return b.ca - a.ca;
-});
-
-const top3 = arr.slice(0, 3);
-```
-
----
-
-## 3) Object.values — ce que ça fait (simple)
-Si tu as ça :
+## 2.5 Object.values (rappel)
+Si tu as un objet “indexé par id” :
 ```js
 const obj = {
   "IDC-001": { nom: "A", ca: 10 },
@@ -530,33 +210,385 @@ const obj = {
 ]
 ```
 
-✅ Donc tu passes de **OBJET** à **TABLEAU** pour pouvoir faire `.sort()` / `.slice()`.
+✅ C’est **le pont** pour passer de `byId {}` à un tableau triable (`sort`, `slice`).
 
 ---
 
-## 4) Checklist “je lis l’énoncé” (anti-panique)
-Quand tu lis une question, fais juste ça :
+# 3) Patterns EXAM (copier / adapter)
 
-### A) Ils veulent quoi comme FORMAT ?
-- **NOMBRE** → init `0`
-- **TABLEAU** → init `[]`
-- **OBJET** → init `{}`
+## P01 — Somme (NOMBRE)
+**Ex : total km / total CA / total jours**
+```js
+const total = data.reduce((acc, x) => {
+  acc = acc + x;
+  return acc;
+}, 0);
+```
 
-### B) Il y a un filtre ?
-Ex : seulement kind='sale' ou type='Moyenne'  
-→ `if (...) return acc;`
+---
 
-### C) Ils veulent un tri ?
-- alpha → `localeCompare`
-- num → `a - b`
-- date FR → `parseFrDate`
-- date ISO → `parseIsoDate`
+## P02 — Compter avec condition (NOMBRE)
+```js
+const count = data.reduce((acc, x) => {
+  if (x >= 10) {
+    acc = acc + 1;
+  }
+  return acc;
+}, 0);
+```
 
-### D) Dedup ?
-- tableau : `includes`
-- objet : index par id → plus simple
+---
 
-Fin.
+## P03 — Somme avec condition (NOMBRE)
+**Ex : somme km seulement si type === "Moyenne"**
+```js
+const totalKm = locations.reduce((acc, loc) => {
+  if (loc.vehicule.vehicule_type === "Moyenne") {
+    acc = acc + loc.location.location_km;
+  }
+  return acc;
+}, 0);
+```
+
+---
+
+## P04 — Construire un TABLEAU (équivalent map)
+```js
+const names = people.reduce((acc, p) => {
+  acc.push(p.last + " " + p.first);
+  return acc;
+}, []);
+```
+
+---
+
+## P05 — Uniques simple (TABLEAU sans doublons)
+```js
+const types = data.reduce((acc, item) => {
+  if (!acc.includes(item.type)) {
+    acc.push(item.type);
+  }
+  return acc;
+}, []);
+
+const typesSorted = sortStringsFrAsc(types);
+```
+
+---
+
+## P06 — Dataset MIXED (sale + location) : filtrer dans reduce
+### Version “champ discriminant” (`kind`)
+```js
+const salesOnly = records.reduce((acc, item) => {
+  if (item.kind !== "sale") return acc;
+  acc.push(item);
+  return acc;
+}, []);
+```
+
+### Version “champ absent” (`date` existe que sur sales)
+```js
+const salesOnly2 = records.reduce((acc, item) => {
+  if (!item.date) return acc;
+  acc.push(item);
+  return acc;
+}, []);
+```
+
+---
+
+## P07 — Min/Max sur date FR (JJ.MM.AAAA) (OBJET)
+**Sortie attendue : strings**
+```js
+const mm = sales.reduce((acc, v) => {
+  const t = frDateToTime(v.date);
+
+  if (acc.min === null || t < acc.minTime) {
+    acc.min = v.date;
+    acc.minTime = t;
+  }
+  if (acc.max === null || t > acc.maxTime) {
+    acc.max = v.date;
+    acc.maxTime = t;
+  }
+
+  return acc;
+}, { min: null, max: null, minTime: null, maxTime: null });
+
+const result = { dateMin: mm.min, dateMax: mm.max };
+```
+
+---
+
+## P08 — GroupBy (OBJET -> tableaux) + pas de doublons + tri
+**Objectif :**
+```js
+// {
+//   "Moyenne": ["Mazda 3 [IDV-A1] ...", ...],
+//   "Grande":  [...]
+// }
+```
+
+### 1) Construire le groupBy
+```js
+const grouped = locations.reduce((acc, loc) => {
+  const type = loc.vehicule.vehicule_type;
+
+  if (!acc[type]) {
+    acc[type] = [];
+  }
+
+  const label =
+    loc.vehicule.vehicule_nom +
+    " [" + loc.vehicule.vehicule_id + "], à " +
+    loc.vehicule.vehicule_prix_par_jour + " Frs/jour et " +
+    loc.vehicule.vehicule_prix_par_km + " Frs/km";
+
+  if (!acc[type].includes(label)) {
+    acc[type].push(label);
+  }
+
+  return acc;
+}, {});
+```
+
+### 2) Trier chaque tableau (SANS forEach)
+```js
+const groupedSorted = Object.keys(grouped).reduce((acc, key) => {
+  const copy = grouped[key].slice();
+  copy.sort(cmpAlphaFr);
+
+  acc[key] = copy;
+  return acc;
+}, {});
+```
+
+---
+
+## P09 — Le hack le plus rentable : indexer par ID + Object.values
+### A) Client uniques (depuis locations)
+```js
+const byId = locations.reduce((acc, loc) => {
+  const id = loc.client.client_id;
+
+  if (!acc[id]) {
+    acc[id] = {
+      nom_prenom: fullName(loc.client.client_nom, loc.client.client_prenom),
+      date_naissance: loc.client.client_date_naissance,
+    };
+  }
+
+  return acc;
+}, {});
+
+const arr = Object.values(byId);
+const sorted = sortObjectsByFrDateKeyAsc(arr, "date_naissance");
+```
+
+### B) Stats véhicules (CA, km, jours, locations)
+```js
+const byCar = locations.reduce((acc, loc) => {
+  const v = loc.vehicule;
+  const l = loc.location;
+  const id = v.vehicule_id;
+
+  if (!acc[id]) {
+    acc[id] = {
+      vehicule_id: id,
+      vehicule_type: v.vehicule_type,
+      vehicule_nom: v.vehicule_nom,
+      vehicule_prix_par_jour: v.vehicule_prix_par_jour,
+      vehicule_prix_par_km: v.vehicule_prix_par_km,
+      ca: 0,
+      locations: 0,
+      jours: 0,
+      km: 0
+    };
+  }
+
+  // CA = jours*prix_jour + km*prix_km
+  acc[id].ca = acc[id].ca + (l.location_jours * v.vehicule_prix_par_jour) + (l.location_km * v.vehicule_prix_par_km);
+  acc[id].locations = acc[id].locations + 1;
+  acc[id].jours = acc[id].jours + l.location_jours;
+  acc[id].km = acc[id].km + l.location_km;
+
+  return acc;
+}, {});
+
+const carsArr = Object.values(byCar);
+const carsSorted = sortObjectsByNumberKeyDesc(carsArr, "ca");
+```
+
+⚠️ Bug classique : si tu recrées l’objet à chaque tour sans `if (!acc[id])` → tu remets `ca:0` → tu perds l’historique.
+
+---
+
+## P10 — Incidents (TABLEAU) triés par date ISO
+```js
+const incidents = locations.reduce((acc, loc) => {
+  if (loc.location.has_incident === true) {
+    acc.push({
+      date: loc.location.location_date,
+      vehicule: loc.vehicule.vehicule_nom + " [" + loc.vehicule.vehicule_id + "]",
+      client: fullName(loc.client.client_nom, loc.client.client_prenom),
+      details: loc.location.incident_details
+    });
+  }
+  return acc;
+}, []);
+
+const sortedIncidents = sortObjectsByIsoDateKeyAsc(incidents, "date");
+```
+
+---
+
+## P11 — CA d’une vente = somme prix produits (sous-tableau)
+```js
+function caVente(vente) {
+  const total = vente.produits.reduce((sum, p) => {
+    sum = sum + p.prix;
+    return sum;
+  }, 0);
+
+  return total;
+}
+```
+
+---
+
+## P12 — CA par DATE (OBJET)
+```js
+const caByDate = sales.reduce((acc, vente) => {
+  const date = vente.date;
+  const ca = caVente(vente);
+
+  if (!acc[date]) {
+    acc[date] = 0;
+  }
+
+  acc[date] = acc[date] + ca;
+
+  return acc;
+}, {});
+```
+
+---
+
+## P13 — CA par CLIENT (OBJET byId -> TABLEAU trié)
+```js
+const byClient = sales.reduce((acc, vente) => {
+  const id = vente.client.id;
+
+  if (!acc[id]) {
+    acc[id] = {
+      id: id,
+      nom: upper(vente.client.nom),
+      prenom: capitalize(vente.client.prenom),
+      ca: 0
+    };
+  }
+
+  acc[id].ca = acc[id].ca + caVente(vente);
+
+  return acc;
+}, {});
+
+const arr = Object.values(byClient);
+const sorted = sortObjectsByNumberKeyDesc(arr, "ca");
+```
+
+---
+
+## P14 — TOP N (toujours le même plan)
+Plan :
+1) **byId** (objet)  
+2) `Object.values()`  
+3) `sort`  
+4) `slice(0, N)`
+
+### Exemple : TOP 3 produits par CA
+```js
+// 1) rassembler tous les produits (sans forEach)
+const allProducts = sales.reduce((acc, vente) => {
+  const produits = vente.produits;
+
+  produits.reduce((acc2, p) => {
+    acc2.push(p);
+    return acc2;
+  }, acc);
+
+  return acc;
+}, []);
+
+// 2) byId + ca
+const byProd = allProducts.reduce((acc, p) => {
+  const id = p.id;
+
+  if (!acc[id]) {
+    acc[id] = { id: id, nom: p.nom, ca: 0 };
+  }
+
+  acc[id].ca = acc[id].ca + p.prix;
+
+  return acc;
+}, {});
+
+// 3) values + tri + top
+const arr = Object.values(byProd);
+const sorted = sortObjectsByNumberKeyDesc(arr, "ca");
+const top3 = sorted.slice(0, 3);
+```
+
+---
+
+# 4) Mini-check “je lis l’énoncé” (ultra rapide)
+
+1) **Format demandé ?**
+- nombre → `0`
+- tableau → `[]`
+- objet → `{}`
+
+2) **Filtre ?** (ex: kind, type, incident)
+- si pas bon → `return acc;`
+
+3) **Doublons ?**
+- facile → `includes`
+- mieux → index par id `{}` + `Object.values()`
+
+4) **Tri ?**
+- alpha → `localeCompare("fr")`
+- nombre → `a - b` / `b - a`
+- date FR → `frDateToTime(...)`
+- date ISO → `isoDateToTime(...)`
+
+5) **Top N ?**
+- `sort` puis `slice(0, N)`
+
+---
+
+# 5) Erreurs qui te tuent (à éviter)
+
+## 5.1 Oublier INIT
+```js
+// ❌ mauvais : acc devient le premier élément
+numbers.reduce((acc, x) => { ... });
+
+// ✅ bon
+numbers.reduce((acc, x) => { ... }, 0);
+```
+
+## 5.2 Réinitialiser l’objet à chaque tour
+```js
+// ❌ mauvais : tu écrases tout le temps
+acc[id] = { ca: 0 };
+
+// ✅ bon : seulement si pas encore créé
+if (!acc[id]) acc[id] = { ca: 0 };
+```
+
+## 5.3 Mélanger [] et {}
+- `acc[id] = ...` → INIT doit être `{}` (objet)
+- `acc.push(...)` → INIT doit être `[]` (tableau)
 
 ---
 
