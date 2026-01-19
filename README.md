@@ -1,13 +1,6 @@
 <h1>Module 323 — Programmer de manière fonctionnelle</h1>
 
-# RP / Cheat-sheet OPÉRATIONNELLE (SIMPLE, copier / adapter)
-
-Objectif : tu lis l’énoncé → tu prends le **pattern** → tu changes juste les chemins (`jsonData.xxx`) et les clés.
-
-✅ Pas de `forEach`  
-✅ Pas de ternaire `?:`  
-✅ Helpers qui renvoient **un nouveau tableau trié**  
-✅ Exemples ultra répétables
+# RP / Cheat-sheet (SIMPLE)
 
 ---
 
